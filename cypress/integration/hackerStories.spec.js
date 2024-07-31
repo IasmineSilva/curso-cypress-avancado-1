@@ -1,9 +1,15 @@
 describe('Hacker Stories', () => {
   beforeEach(() => {
+    cy.intercept({
+      method: 'GET',
+      pathname: '**/search',
+      query: {
+        query: 'React',
+        page: '0'
+      }
+    }).as('getStories')
     cy.visit('/')
-
-    cy.assertLoadingIsShownAndHidden()
-    cy.contains('More').should('be.visible')
+    cy.wait('@getStories')
   })
 
   it('shows the footer', () => {
@@ -21,9 +27,18 @@ describe('Hacker Stories', () => {
     it.skip('shows the right data for all rendered stories', () => {})
 
     it('shows 20 stories, then the next 20 after clicking "More"', () => {
+      cy.intercept({
+        method: 'GET',
+        pathname: '**/search',
+        query: {
+          query: 'React',
+          page: '1'
+        }
+      }).as('getNextStories')
       cy.get('.item').should('have.length', 20)
 
       cy.contains('More').click()
+      cy.wait('@getNextStories')
 
       cy.assertLoadingIsShownAndHidden()
 
@@ -38,11 +53,7 @@ describe('Hacker Stories', () => {
       cy.get('.item').should('have.length', 19)
     })
 
-    // Since the API is external,
-    // I can't control what it will provide to the frontend,
-    // and so, how can I test ordering?
-    // This is why these tests are being skipped.
-    // TODO: Find a way to test them out.
+
     context.skip('Order by', () => {
       it('orders by title', () => {})
 
@@ -68,6 +79,10 @@ describe('Hacker Stories', () => {
     const newTerm = 'Cypress'
 
     beforeEach(() => {
+      cy.intercept(
+        'GET',
+        `**/search?query=${newTerm}&page=0`
+      ).as('getNewTermStories')
       cy.get('#search')
         .clear()
     })
@@ -75,6 +90,7 @@ describe('Hacker Stories', () => {
     it('types and hits ENTER', () => {
       cy.get('#search')
         .type(`${newTerm}{enter}`)
+        cy.wait('@getNewTermStories')
 
       cy.assertLoadingIsShownAndHidden()
 
